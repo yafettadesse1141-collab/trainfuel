@@ -1209,6 +1209,7 @@ async function estimateFood() {
     const resp = await fetch('https://script.google.com/macros/s/AKfycbzZMsyCS-wVPuctzOkSGxxNOmsLhbdO4S9awSvfzORaA09TMn7rUcFtwTj7Ld98iyN9/exec', {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
+      redirect: 'follow',
       body: JSON.stringify({ description: desc })
     });
 

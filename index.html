@@ -532,7 +532,7 @@ function maybeEnableLogin(){
 
 function signIn(){
   if(!gapiInited||!gisInited){
-    alert('Still loading Google libraries — wait a moment and try again.');
+   alert(googleLoadingMessage());
     return;
   }
   tokenClient.requestAccessToken({prompt:'consent'});

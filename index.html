@@ -338,7 +338,7 @@ input::placeholder,textarea::placeholder{color:var(--dim);}
 </nav>
 
 <!-- Google APIs -->
-<script src="https://accounts.google.com/gsi/client" defer onload="onGoogleLibraryLoad()"></script>
+
 
 <script>
 // ═══════════════════════════════════════════════════════════════
@@ -427,6 +427,7 @@ const MILESTONES = [
 // STATE
 // ═══════════════════════════════════════════════════════════════
 let tokenClient, gapiInited=false, gisInited=false;
+let googleLoadError=null
 let accessToken=null, sheetId=null;
 let currentWeek=1, currentDate=todayStr();
 let localCache={}, pendingSync=[], syncTimer=null;

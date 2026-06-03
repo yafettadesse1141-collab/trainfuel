@@ -450,36 +450,79 @@ window.addEventListener('load',()=>{
   // keys are configured - show login screen and load gapi
   document.getElementById('login-screen').style.display='flex';
   loadGapi();
+  loadGis();
+
 });
 
 function loadGapi(){
+  if(window.gapi&&gapi.client){initGapiClient();return;}
   const s=document.createElement('script');
   s.src='https://apis.google.com/js/api.js';
-  s.onload=()=>{
-    gapi.load('client',async()=>{
-      await gapi.client.init({apiKey:CONFIG.API_KEY,discoveryDocs:[CONFIG.DISCOVERY]});
-      gapiInited=true;
-      maybeEnableLogin();
-    });
-  };
+  s.async=true;
+  s.onload=initGapiClient;
+  s.onerror=()=>{googleLoadError='Google Sheets library could not load. Check browser content blockers or network access to apis.google.com.';};
   document.head.appendChild(s);
 }
 
+function initGapiClient(){
+  try{
+    gapi.load('client',async()=>{
+      try{
+        await gapi.client.init({apiKey:CONFIG.API_KEY,discoveryDocs:[CONFIG.DISCOVERY]});
+        gapiInited=true;
+        maybeEnableLogin();
+      }catch(e){
+        googleLoadError='Google Sheets API could not initialize. Check the browser API key website/API restrictions in Google Cloud.';
+        console.error('Google Sheets init failed',e);
+      }
+    });
+  }catch(e){
+    googleLoadError='Google Sheets library could not start. Refresh the page and try again.';
+    console.error('Google Sheets library failed',e);
+  }
+}
+
+function loadGis(){
+  if(window.google&&google.accounts&&google.accounts.oauth2){initGisClient();return;}
+  const s=document.createElement('script');
+  s.src='https://accounts.google.com/gsi/client';
+  s.async=true;
+  s.onload=initGisClient;
+  s.onerror=()=>{googleLoadError='Google Sign-In library could not load. Check browser content blockers or network access to accounts.google.com.';};
+  document.head.appendChild(s);
+}
+
+function initGisClient(){
+  try{
+    tokenClient=google.accounts.oauth2.initTokenClient({
+      client_id:CONFIG.CLIENT_ID,
+      scope:CONFIG.SCOPES,
+      callback:(resp)=>{
+        if(resp.error){setSyncBadge('err','Sign-in failed');return;}
+        accessToken=resp.access_token;
+        gapi.client.setToken({access_token:accessToken});
+        onSignedIn();
+      },
+    });
+    gisInited=true;
+    maybeEnableLogin();
+  }catch(e){
+    googleLoadError='Google Sign-In could not initialize. Check the OAuth client ID authorized origins.';
+    console.error('Google Sign-In init failed',e);
+  }
+}
+
 window.onGoogleLibraryLoad=function(){
-  tokenClient=google.accounts.oauth2.initTokenClient({
-    client_id:CONFIG.CLIENT_ID,
-    scope:CONFIG.SCOPES,
-    callback:(resp)=>{
-      if(resp.error){setSyncBadge('err','Sign-in failed');return;}
-      accessToken=resp.access_token;
-      gapi.client.setToken({access_token:accessToken});
-      onSignedIn();
-    },
-  });
-  gisInited=true;
-  maybeEnableLogin();
+  initGisClient();
 };
 
+function googleLoadingMessage(){
+  if(googleLoadError) return googleLoadError;
+  if(!gapiInited&&!gisInited) return 'Google Sheets and Sign-In libraries are still loading. Wait a moment and try again.';
+  if(!gapiInited) return 'Google Sheets library is still loading. If this keeps happening, check the Sheets API key restrictions.';
+  if(!gisInited) return 'Google Sign-In library is still loading. If this keeps happening, check browser content blockers.';
+  return 'Google libraries are still loading. Wait a moment and try again.';
+}
 function maybeEnableLogin(){
   if(gapiInited&&gisInited){
     // check if we have an existing token via silent grant
